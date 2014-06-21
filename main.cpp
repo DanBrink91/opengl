@@ -10,14 +10,14 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "shader.h"
+#include "program.h"
 
 //  Global
 int winID;
 GLint projectionLocation, viewLocation, modelLocation;
-GLuint VBO, IBO, program;
+GLuint VBO, IBO;
 float gChanger = 100.0f; 
-glm::vec3 gCameraPos = glm::vec3(1, 1, 0);
+glm::vec3 gCameraPos = glm::vec3(0, 0, 2);
 
 static void RenderSceneCB()
 {
@@ -34,13 +34,13 @@ static void RenderSceneCB()
 		);
 	
 	//  Model specific stuff here
-	glm::mat4 Translate = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.5f, 0.0f));
+	glm::mat4 Translate = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
 	glm::mat4 RotateX = glm::rotate(glm::mat4(1.0f), sinChange, glm::vec3(1.0f, 0.0f, 0.0f));	
 	glm::mat4 RotateY = glm::rotate(glm::mat4(1.0f), sinChange, glm::vec3(0.0f, 1.0f, 0.0f));
 	glm::mat4 Scale = glm::scale(glm::mat4(1.0f), glm::vec3(0.1f, 0.1f, 0.1f));
 	
 	//  Combine all of the model stuff here
-	glm::mat4 Model = Translate * RotateX * RotateY * Scale;
+	glm::mat4 Model = RotateX * RotateY * Scale;
 
 	//  Multiplied in "Reverse" so it is in the correct order. 
 	//glm::mat4 MVP = /*Projection * View */ Model;
@@ -73,16 +73,16 @@ static void keyboardCB(unsigned char key, int x, int y)
 	switch(key)
 	{
 		case 119:
-			gCameraPos.y -= speed;
-		break;
-		case 115:
-			gCameraPos.y += speed;
-		break;
-		case 97:
 			gCameraPos.z -= speed;
 		break;
-		case 100:
+		case 115:
 			gCameraPos.z += speed;
+		break;
+		case 97:
+			gCameraPos.x -= speed;
+		break;
+		case 100:
+			gCameraPos.x += speed;
 		break;
 		case 27: //  Escape key
 			glutDestroyWindow(winID);
@@ -161,42 +161,32 @@ int main(int argc, char** argv)
 	const GLubyte* version = glGetString(GL_VERSION);
 	printf("Renderer: %s\n", renderer);
 	printf("Version: %s\n", version);	
-	
-	Shader vertexShader(GL_VERTEX_SHADER, "shader.vs");
-	Shader fragShader(GL_FRAGMENT_SHADER, "shader.fs");
-	
-	program = glCreateProgram();
-	glAttachShader(program, vertexShader.shader);
-	glAttachShader(program, fragShader.shader);
-	
-	glLinkProgram(program);
-	GLint status;
-	glGetProgramiv(program, GL_LINK_STATUS, &status);
-	if (status == GL_FALSE)
+	Program program("test");
+
+	if(!program.attachShader(GL_VERTEX_SHADER, "shader.vs"))
 	{
-		printf("No link\n");
+		printf("vertex shader failed\n");		
+	}
+
+	if(!program.attachShader(GL_FRAGMENT_SHADER, "shader.fs"))
+	{
+		printf("Fragment shader failed\n");
 	}
 	
-	glValidateProgram(program);
-	glGetProgramiv(program, GL_VALIDATE_STATUS, &status);
-	if (status == GL_FALSE)
-	{
-		printf("No validate\n");
-	}	
-	
-	glUseProgram(program);
+	program.link();
+	glUseProgram(program.program);
 	
 	//  Set uniform variables
-	GLint location = glGetUniformLocation(program, "screenWidth");
+	GLint location = glGetUniformLocation(program.program, "screenWidth");
 	glUniform1i(location, 800);
 
-	GLint location2 = glGetUniformLocation(program, "screenHeight");
+	GLint location2 = glGetUniformLocation(program.program, "screenHeight");
 	glUniform1i(location2, 600);
 	
 	//  Grab locations for uniforms used in rendering
-	projectionLocation = glGetUniformLocation(program, "projection");
-	viewLocation = glGetUniformLocation(program, "view");
-	modelLocation = glGetUniformLocation(program, "model");
+	projectionLocation = glGetUniformLocation(program.program, "projection");
+	viewLocation = glGetUniformLocation(program.program, "view");
+	modelLocation = glGetUniformLocation(program.program, "model");
 	
 	glDepthFunc(GL_LEQUAL);
 
