@@ -25,30 +25,30 @@ static void RenderSceneCB()
 	float sinChange = glutGet(GLUT_ELAPSED_TIME) / 1000.0; //sinf(gChanger);
 
 	//  fov, aspect ratio, near, far
-	glm::mat4 Projection = glm::perspective<float>(50.0, 4.0 / 3.0, 0.1, 10.0);
+	glm::mat4 Projection = glm::perspective<float>(90.0, 4.0 / 3.0, 0.1, 100.0);
 	
 	glm::mat4 View = glm::lookAt(
-		glm::vec3(0, 0, -1), // Camera position 
+		glm::vec3(0, 0, 1), // Camera position 
 		glm::vec3(0, 0, 0), //  Camera looking at
 		glm::vec3(0, 1, 0) //  up position, usually 0, 1, 0
 		);
 	
 	//  Model specific stuff here
-	glm::mat4 Translate = glm::translate(glm::mat4(1.0f), glm::vec3(0.5f, 0.0f, 0.0f));
+	glm::mat4 Translate = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.5f, 0.0f));
 	glm::mat4 RotateX = glm::rotate(glm::mat4(1.0f), sinChange, glm::vec3(1.0f, 0.0f, 0.0f));	
 	glm::mat4 RotateY = glm::rotate(glm::mat4(1.0f), sinChange, glm::vec3(0.0f, 1.0f, 0.0f));
 	glm::mat4 Scale = glm::scale(glm::mat4(1.0f), glm::vec3(0.1f, 0.1f, 0.1f));
 	
 	//  Combine all of the model stuff here
-	glm::mat4 Model =  RotateY * RotateX * Scale;
+	glm::mat4 Model = Translate * RotateX * RotateY * Scale;
 
 	//  Multiplied in "Reverse" so it is in the correct order. 
 	//glm::mat4 MVP = /*Projection * View */ Model;
 
 	
-	glUniformMatrix4fv(projectionLocation, 1, GL_TRUE, glm::value_ptr(Projection));
-	glUniformMatrix4fv(viewLocation, 1, GL_TRUE, glm::value_ptr(View));
-	glUniformMatrix4fv(modelLocation, 1, GL_TRUE, glm::value_ptr(Model));
+	glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, glm::value_ptr(Projection));
+	glUniformMatrix4fv(viewLocation, 1, GL_FALSE, glm::value_ptr(View));
+	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(Model));
 
 	glEnable(GL_DEPTH_TEST);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
