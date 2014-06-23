@@ -11,58 +11,59 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "program.h"
+#include "mesh.h"
 
 //  Global
 int winID;
-GLint projectionLocation, viewLocation, modelLocation;
-GLuint VBO, IBO;
+GLint projectionLocation, viewLocation, modelLocation, timeLocation;
+
+Mesh cube[3];
 float gChanger = 100.0f; 
 glm::vec3 gCameraPos = glm::vec3(0, 0, 2);
 
 static void RenderSceneCB()
 {
-	gChanger += 0.1f;	
-	float sinChange = glutGet(GLUT_ELAPSED_TIME) / 1000.0; //sinf(gChanger);
+	
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	//  Wireframe
+	//glPolygonMode(GL_FRONT, GL_LINE);
+
+	gChanger += 0.01f;	
+	
+	float timeElapsed = glutGet(GLUT_ELAPSED_TIME) / 1000.0;
+
+	float sinChange = sinf(gChanger);
 
 	//  fov, aspect ratio, near, far
 	glm::mat4 Projection = glm::perspective<float>(90.0, 4.0 / 3.0, 0.1, 100.0);
 	
 	glm::mat4 View = glm::lookAt(
-		glm::vec3(0, 0, 1), // Camera position 
+		glm::vec3(sinChange, 0, -1), // Camera position 
 		glm::vec3(0, 0, 0), //  Camera looking at
 		glm::vec3(0, 1, 0) //  up position, usually 0, 1, 0
 		);
-	
-	//  Model specific stuff here
-	glm::mat4 Translate = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-	glm::mat4 RotateX = glm::rotate(glm::mat4(1.0f), sinChange, glm::vec3(1.0f, 0.0f, 0.0f));	
-	glm::mat4 RotateY = glm::rotate(glm::mat4(1.0f), sinChange, glm::vec3(0.0f, 1.0f, 0.0f));
-	glm::mat4 Scale = glm::scale(glm::mat4(1.0f), glm::vec3(0.1f, 0.1f, 0.1f));
-	
-	//  Combine all of the model stuff here
-	glm::mat4 Model = RotateX * RotateY * Scale;
-
-	//  Multiplied in "Reverse" so it is in the correct order. 
-	//glm::mat4 MVP = /*Projection * View */ Model;
-
-	
 	glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, glm::value_ptr(Projection));
 	glUniformMatrix4fv(viewLocation, 1, GL_FALSE, glm::value_ptr(View));
-	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(Model));
-
-	glEnable(GL_DEPTH_TEST);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	glEnableVertexAttribArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	//  Grab size of buffer
-	int size; glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &size);
+	glUniform1f(timeLocation, timeElapsed);
 	
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-	glDrawArrays(GL_TRIANGLES, 0, size/3/sizeof(GLfloat));
-	
-	glDisableVertexAttribArray(0);
+	for(int i =0; i < 3; i++)
+	{
+		cube[i].setPosition(0.0f, 0.0f, 1.0f * i);
+		cube[i].setScale(0.5f, 0.5f, 0.5f);
+		
+		glUniform1f(timeLocation, timeElapsed * i);
 
+		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(cube[i].model));
+		
+		glBindVertexArray(cube[i].vao);
+		
+		//  Grab size of buffer
+		int size; glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &size);
+		
+
+		glDrawArrays(GL_TRIANGLES, 0, size/3/sizeof(GLfloat));
+		glBindVertexArray(0);
+	}
 	glutSwapBuffers();
 	glutPostRedisplay();
 }
@@ -90,52 +91,6 @@ static void keyboardCB(unsigned char key, int x, int y)
 		break;
 	}
 	glutPostRedisplay();
-}
-
-static void CreateVertexBuffer()
-{
-	GLfloat Verticies[] = {
-	-1.0f,-1.0f,-1.0f, // triangle 1 : begin
-    	-1.0f,-1.0f, 1.0f,
-    	-1.0f, 1.0f, 1.0f, // triangle 1 : end
-	1.0f, 1.0f,-1.0f, // triangle 2 : begin
-    	-1.0f,-1.0f,-1.0f,
-    	-1.0f, 1.0f,-1.0f, // triangle 2 : end
-    	1.0f,-1.0f, 1.0f,
-    	-1.0f,-1.0f,-1.0f,
-    	1.0f,-1.0f,-1.0f,
-    	1.0f, 1.0f,-1.0f,
-    	1.0f,-1.0f,-1.0f,
-    	-1.0f,-1.0f,-1.0f,
-    	-1.0f,-1.0f,-1.0f,
-    	-1.0f, 1.0f, 1.0f,
-    	-1.0f, 1.0f,-1.0f,
-    	1.0f,-1.0f, 1.0f,
-    	-1.0f,-1.0f, 1.0f,
-    	-1.0f,-1.0f,-1.0f,
-    	-1.0f, 1.0f, 1.0f,
-    	-1.0f,-1.0f, 1.0f,
-    	1.0f,-1.0f, 1.0f,
-   	1.0f, 1.0f, 1.0f,
-    	1.0f,-1.0f,-1.0f,
-    	1.0f, 1.0f,-1.0f,
-    	1.0f,-1.0f,-1.0f,
-    	1.0f, 1.0f, 1.0f,
-    	1.0f,-1.0f, 1.0f,
-    	1.0f, 1.0f, 1.0f,
-    	1.0f, 1.0f,-1.0f,
-    	-1.0f, 1.0f,-1.0f,
-    	1.0f, 1.0f, 1.0f,
-    	-1.0f, 1.0f,-1.0f,
-    	-1.0f, 1.0f, 1.0f,
-    	1.0f, 1.0f, 1.0f,
-    	-1.0f, 1.0f, 1.0f,
-    	1.0f,-1.0f, 1.0f
-	};
-
-	glGenBuffers(1, &VBO);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Verticies), Verticies, GL_STATIC_DRAW);
 }
 
 
@@ -187,13 +142,54 @@ int main(int argc, char** argv)
 	projectionLocation = glGetUniformLocation(program.program, "projection");
 	viewLocation = glGetUniformLocation(program.program, "view");
 	modelLocation = glGetUniformLocation(program.program, "model");
+	timeLocation = glGetUniformLocation(program.program, "time");
 	
+	glEnable(GL_DEPTH_TEST);	
 	glDepthFunc(GL_LEQUAL);
 
 	glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
 
 
-	CreateVertexBuffer();
+		GLfloat Verticies[] = {
+	-1.0f,-1.0f,-1.0f, // triangle 1 : begin
+    	-1.0f,-1.0f, 1.0f,
+    	-1.0f, 1.0f, 1.0f, // triangle 1 : end
+	1.0f, 1.0f,-1.0f, // triangle 2 : begin
+    	-1.0f,-1.0f,-1.0f,
+    	-1.0f, 1.0f,-1.0f, // triangle 2 : end
+    	1.0f,-1.0f, 1.0f,
+    	-1.0f,-1.0f,-1.0f,
+    	1.0f,-1.0f,-1.0f,
+    	1.0f, 1.0f,-1.0f,
+    	1.0f,-1.0f,-1.0f,
+    	-1.0f,-1.0f,-1.0f,
+    	-1.0f,-1.0f,-1.0f,
+    	-1.0f, 1.0f, 1.0f,
+    	-1.0f, 1.0f,-1.0f,
+    	1.0f,-1.0f, 1.0f,
+    	-1.0f,-1.0f, 1.0f,
+    	-1.0f,-1.0f,-1.0f,
+    	-1.0f, 1.0f, 1.0f,
+    	-1.0f,-1.0f, 1.0f,
+    	1.0f,-1.0f, 1.0f,
+   	1.0f, 1.0f, 1.0f,
+    	1.0f,-1.0f,-1.0f,
+    	1.0f, 1.0f,-1.0f,
+    	1.0f,-1.0f,-1.0f,
+    	1.0f, 1.0f, 1.0f,
+    	1.0f,-1.0f, 1.0f,
+    	1.0f, 1.0f, 1.0f,
+    	1.0f, 1.0f,-1.0f,
+    	-1.0f, 1.0f,-1.0f,
+    	1.0f, 1.0f, 1.0f,
+    	-1.0f, 1.0f,-1.0f,
+    	-1.0f, 1.0f, 1.0f,
+    	1.0f, 1.0f, 1.0f,
+    	-1.0f, 1.0f, 1.0f,
+    	1.0f,-1.0f, 1.0f
+	};
+	for(int i = 0; i<3; i++)
+		cube[i].create(program.program, Verticies, sizeof(Verticies)/sizeof(GLfloat));
 	
 	glutMainLoop();
 	
